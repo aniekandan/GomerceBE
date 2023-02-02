@@ -1,5 +1,5 @@
 """
-Define the resources for the categories
+Define the resources for the product categories
 """
 from flask import jsonify, abort
 from flasgger import swag_from
@@ -11,44 +11,62 @@ from utils.errors import DataNotFound
 
 
 class CategoriesResource(Resource):
-    """ methods relative to the category """
+    """ methods relative to the product Category """
 
-    @staticmethod    
-    @swag_from("../swagger/categories/get_one.yml")
-    def get_category_product(search_id):
+    @staticmethod
+    @swag_from("../swagger/category/get_one.yml")
+    def get_category(category_id):
         """ get product category """
-
         try:
-            products = CategoriesRepository.get(search_id=search_id)
-            return jsonify({"data": products.json})
+            category = CategoriesRepository.get(category_id=category_id)
+            return jsonify({
+                "id": category.id,
+                "name": category.name,
+                "sku": category.sku
+            })
         except DataNotFound as e:
             abort(404, e.message)
         except Exception:
             abort(500)
 
-    @staticmethod  
-    @swag_from("../swagger/categories/get_all.yml")  
+    @staticmethod
+    @swag_from("../swagger/category/get_all.yml")
     def get_all():
-        """ get all categories information """
+        """ Return all category key information based on the query parameter """
         categories = CategoriesRepository.getAll()
         return jsonify({"data": categories})
 
     @staticmethod
-    # @swag_from("../swagger/categories/post.yml")
     @parse_params(
-        Argument("name", location="json",
-                 help="The category name"),
-        Argument("sku", location="json",
-                 help=" the category sku"),
-        Argument("products", location="json",
-                 help="defines the products of this categories")
+        Argument("name", location="json", required=True,
+                 help="The name of the product_category."),
+        Argument("sku", location="json", required=True,
+                 help="The sku of the product_category.")
+    )
+    def update(category_id, name, sku):
+        """ Update a category """
+        category = CategoriesRepository().update(
+            category_id=category_id, name=name, sku=sku
+        )
+        return jsonify({"message": category.json})
+
+    def delete(category_id):
+        """ delete a category"""
+        CategoriesRepository.delete(category_id=category_id)
+        return jsonify({"message": "category successfully deleted"})
+
+    @staticmethod
+    @parse_params(
+        Argument("name", location="json", required=True,
+                 help="The name of the category."),
+        Argument("sku", location="json", required=True,
+                 help="The sku of the category."),
+        Argument("products", location="json", required=True,
+                 help="The product of the category.")
     )
     def post(name, sku, products):
-        """ Create a category based on the provided information """
-        print("i was called")
+        """ Create a category """
         category = CategoriesRepository.create(
-            name=name,
-            sku=sku,
-            products=products
+            name=name, sku=sku, products=products
         )
         return jsonify({"data": category.json})
